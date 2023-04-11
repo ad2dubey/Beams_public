@@ -1,4 +1,3 @@
-# Beams
+# README
 
-
-We want beams and we can not lie
+This repository is created as part of project for ECE 8803, 2023 
