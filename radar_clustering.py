@@ -10,15 +10,15 @@ from mpl_toolkits.mplot3d import Axes3D
 import open3d as o3d
 from munkres import Munkres, print_matrix
 import sys
-#Added a lame ass comment
+
 eps = 0.15
-min_pts = 200
+min_pts = 250
 df = pd.read_csv('Apr10/zigzagwalk_1.csv')
 alpha = 0.25
 L = np.array([10000,10000,10000]) #Limit type1
 L2 = 10000 #Limit type2
 thresh = 5 #threshold for the dsitance above which the distance is made L2
-maxFails = int(sys.argv[1]) #Maximum number of frames for which a track is checked. Failure after maxFails will lead to removal of the track
+maxFails = 10#int(sys.argv[1]) #Maximum number of frames for which a track is checked. Failure after maxFails will lead to removal of the track
 
 def dist(p1, p2):
     #Calculating distance between two points. Z-axis is weighted to reduce importance.
