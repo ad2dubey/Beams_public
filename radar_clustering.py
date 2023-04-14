@@ -10,7 +10,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import open3d as o3d
 from munkres import Munkres, print_matrix
 import sys
-
+#Added a lame ass comment
 eps = 0.15
 min_pts = 200
 df = pd.read_csv('Apr10/zigzagwalk_1.csv')
