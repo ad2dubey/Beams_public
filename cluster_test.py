@@ -58,7 +58,7 @@ def frame_processing(frame):
     
 def dbscan(xyz):
     scaled_points = StandardScaler().fit_transform(xyz)
-    print(f"Scaled points are : Max = {max(scaled_points[0])}, Min = {min(scaled_points[0])}")
+    #print(f"Scaled points are : Max = {max(scaled_points[0])}, Min = {min(scaled_points[0])}")
     ##Clustering frame using dbscan
     model = DBSCAN(eps= eps,min_samples= min_pts)
     model.fit(scaled_points)
@@ -73,7 +73,7 @@ def tracks_update(centroid_array, centroid_doppler,centroid_label):
     global track_status
     global counter
 
-    print("\nFrame number = ", counter)
+    #print("\nFrame number = ", counter)
     counter += 1
     if not tracks:
         for coordinate in centroid_array:
@@ -85,10 +85,10 @@ def tracks_update(centroid_array, centroid_doppler,centroid_label):
     track_points = extract_last_points(tracks) #1. Last coordinates from track
     fr_points = convert(centroid_array) #2. Convert the numpy array of array to lsit of numpy arrays
 
-    print(f"Frame {counter} statistics:")
-    print(f"tracks length = {len(tracks)}")
-    print(f"fr_points length = {len(fr_points)}")
-    print(f"This set points must be returned = {fr_points}?")
+    #print(f"Frame {counter} statistics:")
+    #print(f"tracks length = {len(tracks)}")
+    #print(f"fr_points length = {len(fr_points)}")
+    #print(f"This set points must be returned = {fr_points}?")
 
     #Padding the shorter array with L, where L is a far away coordinate wrt all axes.
     lendiff = len(track_points) - len(fr_points)
@@ -107,7 +107,7 @@ def tracks_update(centroid_array, centroid_doppler,centroid_label):
 
     for row, column in indexes:
         d = matrix[row][column]
-        print(f'({row}, {column}) -> {d}')
+        #print(f'({row}, {column}) -> {d}')
         if d < L2:
             #Adding the point fr_points[column] to the tracks[row]
             tracks[row].append(fr_points[column])
@@ -120,6 +120,8 @@ def tracks_update(centroid_array, centroid_doppler,centroid_label):
             #2. Add the cluster from the current frame as a new track.
             add_to_tracks(fr_points[column],column)
     #Delete tracks that are marked for deletion
+    if len(tracks) > 0:
+        delete_tracks()
     #Visualizing
     #visualize()
     
@@ -219,14 +221,8 @@ def preprocess(df):
 
 if __name__ == '__main__':
     # if frame start processing, else keep reading
-    #df = pd.read_csv('Apr10/walk_stand_1.csv')
     
-    #open tx-sector files
-
-    #frames= preprocess(df)
-    #keys = list(frames.keys())
-    
-    pipe_path = '/home/marga3/group4/anotherrec'
+    pipe_path = '/home/marga3/group4/clusterdata'
     pipe_fd = os.open(pipe_path, os.O_RDONLY)
     pipe_file = os.fdopen(pipe_fd)
         
@@ -238,7 +234,12 @@ if __name__ == '__main__':
     while True:
         line = pipe_file.readline()
         line = line.split(',')
-        line = [float(x) for x in line]
+        
+        if len(line) > 0:
+            line = [float(x) for x in line]
+            
+        else:
+            continue
         
         if not current_frame == '':
             current_frame = line[1]
@@ -248,12 +249,21 @@ if __name__ == '__main__':
             current_frame = line[1]
         
         if active_frame == current_frame:
+            #print(f'Line = {line}')
             df.loc[len(df)] = line 
         
         else:
-            print('******************Frame starts******************')
+            #print(active_frame)
+            #print('Im here')
+            #print('******************Track starts******************')
             frame_processing(df)
-            print('******************Frame ends******************\n\n')
+            #print(tracks)
+            #print('******************Tracks ends******************\n\n')
+            if len(tracks) > 0:
+                for t in tracks:
+                    print(f'The latest x,y values for = {t[-1]}')
+            
+                print('******************Tracks ends******************\n\n')
             df = pd.DataFrame(columns = df_columns)
             active_frame = current_frame
         
