@@ -10,6 +10,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import open3d as o3d
 from munkres import Munkres, print_matrix
 import sys
+import os
 
 # global constants wont change
 eps = 0.16
@@ -218,18 +219,43 @@ def preprocess(df):
 
 if __name__ == '__main__':
     # if frame start processing, else keep reading
-    df = pd.read_csv('Apr10/walk_stand_1.csv')
+    #df = pd.read_csv('Apr10/walk_stand_1.csv')
     
     #open tx-sector files
 
-    frames= preprocess(df)
-    keys = list(frames.keys())
-    i = 0
-    for k in keys:
-        current_frame = frames[k]
-        print('******************Frame starts******************')
-        frame_processing(current_frame)
-        ## get the current tracks here
-        print('******************Frame ends******************\n\n')
+    #frames= preprocess(df)
+    #keys = list(frames.keys())
     
-
+    pipe_path = '/home/marga3/group4/anotherrec'
+    pipe_fd = os.open(pipe_path, os.O_RDONLY)
+    pipe_file = os.fdopen(pipe_fd)
+        
+    print('Pipe opened, lets hope nothing blows up')
+    active_frame = ''
+    current_frame = ''
+    df_columns = ['timestamp', 'frame' , 'point' , 'X', 'Y', 'Z', 'doppler', 'intensity']
+    df = pd.DataFrame(columns = df_columns) 
+    while True:
+        line = pipe_file.readline()
+        line = line.split(',')
+        line = [float(x) for x in line]
+        
+        if not current_frame == '':
+            current_frame = line[1]
+        
+        if active_frame == '' and current_frame == '':
+            active_frame = line[1]
+            current_frame = line[1]
+        
+        if active_frame == current_frame:
+            df.loc[len(df)] = line 
+        
+        else:
+            print('******************Frame starts******************')
+            frame_processing(df)
+            print('******************Frame ends******************\n\n')
+            df = pd.DataFrame(columns = df_columns)
+            active_frame = current_frame
+        
+        if not line:
+            break
