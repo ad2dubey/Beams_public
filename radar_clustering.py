@@ -92,11 +92,8 @@ for k in keys:
     #Converting dataframe to a numpy array
     xyz = fr[['X','Y','Z']].to_numpy()
     xyz[:,2] = 0
-    # pcd = o3d.geometry.PointCloud()
-    # pcd.points = o3d.utility.Vector3dVector(xyz)
-    # points = np.asarray(pcd.points).copy()
-
-    ##Normalizing the points
+    
+    #Normalizing the points
     scaled_points = StandardScaler().fit_transform(xyz)
     print(f"Scaled points are : Max = {max(scaled_points[0])}, Min = {min(scaled_points[0])}")
     ##Clustering frame using dbscan
