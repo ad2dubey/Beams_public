@@ -1,0 +1,1 @@
+ssh admin@192.168.250.242 "/interface w60g monitor 0" > router_file
