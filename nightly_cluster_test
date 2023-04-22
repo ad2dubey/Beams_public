@@ -224,7 +224,7 @@ def visualize( ):
     o3d.visualization.draw_geometries([pcd_track], mesh_show_wireframe=True)
 
 
-def update_ip_track_list(tan_inv_list):
+def update_ip_track_list():
     global tracks
     global ip_track
     
@@ -245,28 +245,30 @@ def update_ip_track_list(tan_inv_list):
                 codebook_angl = val['azimuth']
         
         if sector_val_ip not in ip_track:
+            tan_inv_list = [math.atan(t[-1][1]/t[-1][0]) for t in tracks]
             diff_angle = [(codebook_angl-x) for x in tan_inv_list]
             track_index = diff_angle.index(math.min(diff_angle))
             ip_track[sector_val_ip] = tracks[track_index]
     
     if codebook_angl != -999:
         # send x,y and angle to the sta?
+        '''IMPLEMENTATION'''
+        return
     
 def update_track_in_ip(row, column_data):
     global tracks
     global ip_track
     for key, val in ip_track:
-        if ip_track[key] == track[row]:
+        if ip_track[key] == tracks[row]:
             ip_track[key].append(column_data)
-            track[row].append(column_data)
+            tracks[row].append(column_data)
 # what if that ip doesnt exist??
 
 if __name__ == '__main__':
-    # if frame start processing, else keep reading
-    
+    # load up the sector_val at the start
     sector_val = pd.read_csv('/home/marga3/group4/sector-values.csv')
-    
-    
+
+    # if frame start processing, else keep reading
     pipe_path = '/home/marga3/group4/clusterdata'
     pipe_fd = os.open(pipe_path, os.O_RDONLY)
     pipe_file = os.fdopen(pipe_fd)
@@ -277,6 +279,7 @@ if __name__ == '__main__':
     df_columns = ['timestamp', 'frame' , 'point' , 'X', 'Y', 'Z', 'doppler', 'intensity']
     df = pd.DataFrame(columns = df_columns)
     tan_inv_list = list() 
+    
     while True:
         line = pipe_file.readline()
         line = line.split(',')
@@ -304,11 +307,11 @@ if __name__ == '__main__':
         else:
             frame_processing(df)
             if len(tracks) > 0:
-                tan_inv_list = [math.atan(t[-1][1]/t[-1][0]) for t in tracks]
-                update_ip_track_list(tan_inv_list)
+                update_ip_track_list()
             # finishing setup
             df = pd.DataFrame(columns = df_columns)
             active_frame = current_frame
+            tan_inv_list = list()
         
         if not line:
             break
