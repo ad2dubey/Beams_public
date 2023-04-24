@@ -21,7 +21,7 @@ alpha = 0.25
 L = np.array([10000,10000,10000]) #Limit type1
 L2 = 10000 #Limit type2
 thresh = 5 #threshold for the dsitance above which the distance is made L2
-maxFails = 10 #Maximum number of frames for which a track is checked. Failure after maxFails will lead to removal of the track
+maxFails = 100 #Maximum number of frames for which a track is checked. Failure after maxFails will lead to removal of the track
 
 #structs monitoring tracks
 global tracks
@@ -29,10 +29,12 @@ global track_status
 global counter
 global ip_track
 global sector_val
+global doppler
 ip_track = {'192.168.250.10':None, '192.168.250.11':None}
 tracks = []
 track_status = []
 counter = 0
+doppler = []
 
 def frame_processing(frame):
     fr =  frame
@@ -81,14 +83,15 @@ def tracks_update(centroid_array, centroid_doppler,centroid_label):
     global tracks
     global track_status
     global counter
+    global doppler
 
     #print("\nFrame number = ", counter)
     counter += 1
     if not tracks:
         for coordinate in centroid_array:
             tracks.append([coordinate])
-            # var.append(0)
-            # var_tracker.append([0])
+        for d in centroid_doppler:
+            doppler.append([d])
         track_status = [0]*len(tracks)
         return
     
@@ -106,6 +109,7 @@ def tracks_update(centroid_array, centroid_doppler,centroid_label):
     appender = [L]*abs(lendiff)
     if lendiff > 0:
         fr_points.extend(appender)
+        centroid_doppler.extend(appender)
     elif lendiff < 0:
         track_points.extend(appender)
 
@@ -119,11 +123,11 @@ def tracks_update(centroid_array, centroid_doppler,centroid_label):
     for row, column in indexes:
         d = matrix[row][column]
         #print(f'({row}, {column}) -> {d}')
-        
         #update tracks happens here
         if d < L2:
             #Adding the point fr_points[column] to the tracks[row]
             tracks[row].append(fr_points[column])
+            doppler[row].append(centroid_doppler[column])
             # update the track for corresponding ip
             #update_track_in_ip(row, fr_points[column])
     
@@ -134,7 +138,7 @@ def tracks_update(centroid_array, centroid_doppler,centroid_label):
             #1. Process the tracks and track_status arrays.
             update_fail_tracks(row)
             #2. Add the cluster from the current frame as a new track.
-            add_to_tracks(fr_points[column],column)
+            add_to_tracks(fr_points[column],column,centroid_doppler[column])
     #Delete tracks that are marked for deletion
     # print("tracks pre deletion = ")
     # for track in tracks:
@@ -189,16 +193,18 @@ def delete_tracks():
             #         del ip_track[key]
             del tracks[i]
             del track_status[i]
+            del doppler[i]
             i -= 1
             length -= 1
         i += 1
 
-def add_to_tracks(point,column):
+def add_to_tracks(point,column,d):
     #If the point was an augmented point, ignore
     if all(point == L):
         return
     #Else add point as a new track
     tracks.append([point])
+    doppler.append([d])
     track_status.append(0)
 
 def visualize( ):
@@ -304,7 +310,7 @@ if __name__ == '__main__':
     # pipe_file = os.fdopen(pipe_fd)
 
     #Using a fixed csv and reading it line by line
-    csv_path = '/home/marga_share/group4/CODEBASE/Apr10/walk_stand_3.csv'
+    csv_path = '/home/marga_share/group4/CODEBASE/Apr10/walk_stand_2.csv'
     pipe_file = open(csv_path)
 
     print('Pipe opened, lets hope nothing blows up')
@@ -347,12 +353,12 @@ if __name__ == '__main__':
             frame_processing(df)
             temp_save = open('temp_save.txt','w')
             i = 1
-            # for track in tracks:
-            #     temp_save.write("Tracks "+str(i))
-            #     for entry in track:
-            #         temp_save.write(str(list(entry))+"\n")
-            #     temp_save.write("\n\n")
-            #     i = i+1
+            for j in range(len(tracks)):
+                temp_save.write("Tracks "+str(i)+"\n")
+                for k in range(len(tracks[j])):
+                    temp_save.write(str(list(tracks[j][k]))+": "+str(doppler[j][k])+"\n")
+                temp_save.write("\n\n")
+                i = i+1
             if len(tracks) > 0:
                 # codebook_sec, tan_inv = find_code_angl()
                 # saverfile.write(str(codebook_sec)+"\t"+str(tan_inv)+"\n")
