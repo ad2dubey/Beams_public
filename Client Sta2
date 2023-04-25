@@ -1,0 +1,34 @@
+import socket
+import os
+import sys
+import time
+
+# Create a UDP socket
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+# Bind the socket to a specific IP address and port
+server_address = ('192.168.250.20', 9999) # TODO: set correct address
+#sock.bind(server_address)
+    
+#print('Server is running and waiting for messages...')
+
+# Continuously listen for incoming datagrams
+while True:
+    #data, address = sock.recvfrom(4096)
+    #decodedData = data.decode()
+
+    #print(str(decodedData)+'\n')
+    
+    # Print received message and client address
+    #print(f'Received "{data.decode()}" from {address}')
+    
+    # Send a response back to the client
+    with open('alpha.txt', 'r+') as f:
+        if os.path.getsize('alpha.txt') != 0:
+            response = f.readlines()[-1]
+            f.truncate(0)
+            print(response)
+            sock.sendto(response.encode(), server_address)
+    #response = f'Received "{data.decode()}"'
+    
+
