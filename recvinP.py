@@ -18,6 +18,11 @@ import routeros_api
 import struct
 import signal
 
+
+# set this up
+MOBILE_IP = '192.168.250.11'
+FIXED_IP = '192.168.250.13'
+
 PORT = 8080
 
 # Create socket object
@@ -28,6 +33,8 @@ s.bind(('127.0.0.1', PORT))
 # Listen for incoming connections
 s.listen()
 
+# Create a UDP socket
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 print('Python program listening for connections')
 
 
@@ -46,7 +53,7 @@ global track_status
 global counter
 global ip_track
 global sector_val
-ip_track = {'192.168.250.11':[], '192.168.250.13':[]}
+ip_track = {MOBILE_IP:[], FIXED_IP:[]}
 tracks = []
 track_status = []
 counter = 0
@@ -251,23 +258,21 @@ def update_ip_tracks(row,column_data):
             
             #Dont update anything below this
             #Sending data to mobile ip about others coordinates
-            if len(ip_track['192.168.250.11'])>0 and len(ip_track['192.168.250.13'])>0:
+            if len(ip_track[MOBILE_IP])>0 and len(ip_track[FIXED_IP])>0:
                 send_data_to_mobAP()
 
 def send_data_to_mobAP():
-    # Create a UDP socket
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
     # Send a message to the server
-    server_address = ('192.168.250.11', 9999)
-    message = str({'192.168.250.11' : ip_track['192.168.250.11'][-1],'192.168.250.13' : ip_track['192.168.250.13'][-1]})
+    server_address = (MOBILE_IP, 9999)
+    # message = str({'192.168.250.11' : ip_track['192.168.250.11'][-1],'192.168.250.13' : ip_track['192.168.250.13'][-1]})
+    # message = str(ip_track['192.168.250.11'][-1][0])+","+str(ip_track['192.168.250.11'][-1][1])+","+str(ip_track['192.168.250.13'][-1][0])+","+str(ip_track['192.168.250.13'][-1][1])
+    message = str(ip_track[MOBILE_IP][-1][0])+","+str(ip_track[MOBILE_IP][-1][1])+",-2.01,2.32"
     sock.sendto(message.encode(), server_address)
-
     # Wait for a response from the server
-    response, server = sock.recvfrom(4096)
+    # response, server = sock.recvfrom(4096)
 
     # Print the response from the server
-    print(f'Received "{response.decode()}" from {server}')
+    # print(f'Received "{response.decode()}" from {server}')
 
 def getTxSector(alpha):
     if alpha > 22.8:
@@ -304,12 +309,15 @@ def is_connected(hostname):
 
 def identify_cluster_ip(sector_p_track,tan_inv_degrees):
     for angle in tan_inv_degrees:
-        if angle > 0:
-            #Assign it the ip address 192.168.250.11
-            ip_track['192.168.250.11'] = tracks[tan_inv_degrees.index(angle)]
+        if angle > 0 and len(ip_track[MOBILE_IP]) <= 0:
+            #Assign it the ip address 192.168.250.11 == MOBILE_IP
+            ip_track[MOBILE_IP] = tracks[tan_inv_degrees.index(angle)]
+        elif angle < 0 and len(ip_track[FIXED_IP]) <= 0:
+            #Assign it the ip address 192.,168.250.13 == FIXED_IP
+            ip_track[FIXED_IP] = tracks[tan_inv_degrees.index(angle)]
         else:
-            #Assign it the ip address 192.,168.250.13 
-            ip_track['192.168.250.13'] = tracks[tan_inv_degrees.index(angle)]
+            # future implementation
+            pass
     
     print('Assigned')
 
@@ -331,9 +339,15 @@ def get_codebook_sector():
     # set tx sector, then send message asking for ip
     # set the ip track dict if i get resp
 
-    if len(ip_track['192.168.250.11']) <= 0 or len(ip_track['192.168.250.13']) <= 0:
+    if len(ip_track[MOBILE_IP]) <= 0 or len(ip_track[FIXED_IP]) <= 0:
         identify_cluster_ip(sector_per_track, tan_inv_degrees)
-    print(f'IP Track = {ip_track}')
+    ip_track_print = {}
+    for k,v in ip_track.items():
+        if not v:
+            ip_track_print[k] = v
+        else:
+            ip_track_print[k] = v[-1]
+    print(f'IP Track = {ip_track_print}')
         
 def signal_handler(sig,frame):
     print('Pressed')
