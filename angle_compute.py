@@ -68,7 +68,7 @@ if __name__ == "__main__":
     while True:
         
         print("1. For calculating angle\n2. Sending sector to station\n")
-        val = input()
+        val = int(input())
         if val == 1:
             if started == 0:
                 phi = input("Enter angle between radar axes and magnetic north: ")
@@ -79,7 +79,8 @@ if __name__ == "__main__":
     
             action = input("Collected IMU values? y/n ")
             if action == 'y':
-                df = pd.read_excel('a.xls')
+                xfile = input("IMU data file")
+                df = pd.read_excel(xfile+'.xls')
                 df = df.to_numpy()
                 angle = []
                 sum = 0
@@ -110,7 +111,7 @@ if __name__ == "__main__":
             connection = routeros_api.RouterOsApiPool(ROUTER_IP, username=USERNAME, password=PASSWORD, plaintext_login=True)
             api = connection.get_api()
             sector_val = api.get_resource('/interface/w60g').get()[0]['tx-sector']
-            if sta1_txSector != 0 and sta1_txSector == sector_val:
+            if sta1_txSector != 0 and int(sta1_txSector) == int(sector_val):
 
                 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 server_address = ('192.168.250.20', 9999)
