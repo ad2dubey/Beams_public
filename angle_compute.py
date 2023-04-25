@@ -57,59 +57,66 @@ if __name__ == "__main__":
 
     phi=45
     imu_sta2_phi=120
-    
+    sta1_txSector = 0
     started = 0
+    sta1_latest_sector = 0
 
     #pipe_path = '/home/roshni/Downloads/rxdata'
     #pipe_fd = os.open(pipe_path, os.O_RDONLY)
     #pipe_file = os.fdopen(pipe_fd)
     
     while True:
-        #line = pipe_file.readline()
-        #print(line)
         
-        if started == 0:
-            phi = input("Enter angle between radar axes and magnetic north: ")
-            phi = float(phi)
-            imu_sta2_phi = input("Enter angle between STA 2 axes and magnetic north: ")
-            imu_sta2_phi = float(imu_sta2_phi)
-            started = 1
-   
-        action = input("Collected IMU values? y/n ")
-        if action == 'y':
-            df = pd.read_excel('a.xls')
-            df = df.to_numpy()
-            angle = []
-            sum = 0
-            for i in range(0,100):
-                angle.append(np.arctan2(df[i][2],df[i][1]))
-            imu_sta1_phi = statistics.mean(angle)
-		
-        with open('locData.txt', 'r+') as f:
-            if os.path.getsize('locData.txt') != 0:
-                last_line = f.readlines()[-1]
-                f.truncate(0)
-                coordinates = last_line.split(',')
-                x1 = float(coordinates[0])
-                y1 = float(coordinates[1])
-                x2 = float(coordinates[2])
-                y2 = float(coordinates[3])
-                print(x1,y1,x2,y2)
-		
+        print("1. For calculating angle\n2. Sending sector to station\n")
+        val = input()
+        if val == 1:
+            if started == 0:
+                phi = input("Enter angle between radar axes and magnetic north: ")
+                phi = float(phi)
+                imu_sta2_phi = input("Enter angle between STA 2 axes and magnetic north: ")
+                imu_sta2_phi = float(imu_sta2_phi)
+                started = 1
+    
+            action = input("Collected IMU values? y/n ")
+            if action == 'y':
+                df = pd.read_excel('a.xls')
+                df = df.to_numpy()
+                angle = []
+                sum = 0
+                for i in range(0,100):
+                    angle.append(np.arctan2(df[i][2],df[i][1]))
+                imu_sta1_phi = statistics.mean(angle)
+            
+            with open('locData.txt', 'r+') as f:
+                if os.path.getsize('locData.txt') != 0:
+                    last_line = f.readlines()[-1]
+                    f.truncate(0)
+                    coordinates = last_line.split(',')
+                    x1 = float(coordinates[0])
+                    y1 = float(coordinates[1])
+                    x2 = float(coordinates[2])
+                    y2 = float(coordinates[3])
+                    print(x1,y1,x2,y2)
+            
 
-	    # Get sta1_theta, sta2_theta from STA
-        [alpha1, alpha2] = computeAlphaAtSTA(x1, y1, x2, y2,phi,imu_sta1_phi,imu_sta2_phi);
-        sta1_txSector = getTxSector(alpha1) # TODO: Change tx sector
-        set_tx_sector(sta1_txSector)
-        sta1_latest_sector = getTxSector(alpha1)
+            # Get sta1_theta, sta2_theta from STA
+            [alpha1, alpha2] = computeAlphaAtSTA(x1, y1, x2, y2,phi,imu_sta1_phi,imu_sta2_phi);
+            sta1_txSector = getTxSector(alpha1) # TODO: Change tx sector
+            set_tx_sector(sta1_txSector)
+            sta1_latest_sector = getTxSector(alpha2)
         
-        #get tx-sector
-        sector_val = api.get_resource('/interface/w60g').get()[0]['tx-sector']
+        elif val ==2:
+            #get tx-sector
+            sector_val = api.get_resource('/interface/w60g').get()[0]['tx-sector']
+            if sta1_txSector != 0 and sta1_txSector == sector_val:
 
-        print(sector_val)
-        connection.disconnect()
-        exit(1)
-
-        fsend=open("alpha.txt", "w")
-        fsend.write(str(sta1_latest_sector))
-        fsend.close()     
+                sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                server_address = ('192.168.250.20', 9999)
+                sock.sendto(str(sta1_latest_sector).encode(), server_address)
+                connection.disconnect()
+        
+        else:
+            continue
+        # fsend=open("alpha.txt", "w")
+        # fsend.write(str(sta1_latest_sector))
+        # fsend.close()     
