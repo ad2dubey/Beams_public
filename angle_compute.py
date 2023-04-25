@@ -15,13 +15,13 @@ USERNAME = "admin"
 ROUTER_IP = "192.168.250.241"
 PASSWORD = ""
 
-connection = routeros_api.RouterOsApiPool(ROUTER_IP, username=USERNAME, password=PASSWORD, plaintext_login=True)
-api = connection.get_api()
+
 # Get the TX sector value using the RouterOS library
 def set_tx_sector(sectorNo):
     # try:
     # Connect to the Mikrotik router using RouterOS API over SSH
-    
+    connection = routeros_api.RouterOsApiPool(ROUTER_IP, username=USERNAME, password=PASSWORD, plaintext_login=True)
+    api = connection.get_api()
     api.get_resource('/interface/w60g').call('set',{'numbers':'0', 'tx-sector':str(sectorNo)})
     connection.disconnect()
 
@@ -107,11 +107,14 @@ if __name__ == "__main__":
         
         elif val ==2:
             #get tx-sector
+            connection = routeros_api.RouterOsApiPool(ROUTER_IP, username=USERNAME, password=PASSWORD, plaintext_login=True)
+            api = connection.get_api()
             sector_val = api.get_resource('/interface/w60g').get()[0]['tx-sector']
             if sta1_txSector != 0 and sta1_txSector == sector_val:
 
                 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 server_address = ('192.168.250.20', 9999)
+                print(f'Sending sector value = {sta1_latest_sector}')
                 sock.sendto(str(sta1_latest_sector).encode(), server_address)
                 connection.disconnect()
         
