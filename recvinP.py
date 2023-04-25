@@ -250,7 +250,24 @@ def update_ip_tracks(row,column_data):
             ip_track[key] = tracks[row]
             
             #Dont update anything below this
-            
+            #Sending data to mobile ip about others coordinates
+            if len(ip_track['192.168.250.11'])>0 and len(ip_track['192.168.250.13'])>0:
+                send_data_to_mobAP()
+
+def send_data_to_mobAP():
+    # Create a UDP socket
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+    # Send a message to the server
+    server_address = ('192.168.250.11', 9999)
+    message = str({'192.168.250.11' : ip_track['192.168.250.11'][-1],'192.168.250.13' : ip_track['192.168.250.13'][-1]})
+    sock.sendto(message.encode(), server_address)
+
+    # Wait for a response from the server
+    response, server = sock.recvfrom(4096)
+
+    # Print the response from the server
+    print(f'Received "{response.decode()}" from {server}')
 
 def getTxSector(alpha):
     if alpha > 22.8:
