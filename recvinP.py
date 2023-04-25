@@ -249,6 +249,8 @@ def update_ip_tracks(row,column_data):
             tracks[row].append(column_data)
             ip_track[key] = tracks[row]
             
+            #Dont update anything below this
+            
 
 def getTxSector(alpha):
     if alpha > 22.8:
