@@ -29,8 +29,15 @@ def set_tx_sector(sectorNo):
 def computeAlphaAtSTA(x1, y1, x2, y2,phi,imu_sta1_phi,imu_sta2_phi):
     # Orientation angle is the angle between STA1's axes and global axes
     gamma=np.arctan2(y2-y1,x2-x1)*180/np.pi;
-    alpha1 = imu_sta1_phi-phi+gamma;
-    alpha2 = 180-(imu_sta2_phi-phi+gamma);    
+    print("gamma = ",gamma)
+    # alpha1 = imu_sta1_phi-phi+gamma;
+    # alpha2 = 180-(imu_sta2_phi-phi+gamma); 
+    alpha1 = -1*imu_sta1_phi+phi+90-gamma;
+    alpha2 = 270-imu_sta2_phi+phi-gamma;
+    if alpha1 <=-180:
+        alpha1=alpha1+180
+    if alpha2 <=-180:
+        alpha2=alpha2+180    
     return alpha1, alpha2;
     
 def getTxSector(alpha):
@@ -55,8 +62,8 @@ def getTxSector(alpha):
 
 if __name__ == "__main__":
 
-    phi=45
-    imu_sta2_phi=120
+    phi=0
+    imu_sta2_phi=93.55
     sta1_txSector = 0
     started = 0
     sta1_latest_sector = 0
@@ -71,10 +78,10 @@ if __name__ == "__main__":
         val = int(input())
         if val == 1:
             if started == 0:
-                phi = input("Enter angle between radar axes and magnetic north: ")
-                phi = float(phi)
-                imu_sta2_phi = input("Enter angle between STA 2 axes and magnetic north: ")
-                imu_sta2_phi = float(imu_sta2_phi)
+                # phi = input("Enter angle between radar axes and magnetic north: ")
+                # phi = float(phi)
+                # imu_sta2_phi = input("Enter angle between STA 2 axes and magnetic north: ")
+                # imu_sta2_phi = float(imu_sta2_phi)
                 started = 1
     
             action = input("Collected IMU values? y/n ")
@@ -85,9 +92,14 @@ if __name__ == "__main__":
                 angle = []
                 sum = 0
                 for i in range(0,100):
-                    angle.append(np.arctan2(df[i][2],df[i][1]))
+                    angle.append(np.arctan2(df[i][2],df[i][1])*180/np.pi)
                 imu_sta1_phi = statistics.mean(angle)
-            
+                imu_sta1_phi = np.mean(angle)
+                imu_sta1_phi=input("input IMU1 angle ")
+                imu_sta1_phi=float(imu_sta1_phi)
+                if imu_sta1_phi>180:
+                    imu_sta1_phi=imu_sta1_phi-360
+                print("IMU STA1 phi = ",imu_sta1_phi)        
             with open('locData.txt', 'r+') as f:
                 if os.path.getsize('locData.txt') != 0:
                     last_line = f.readlines()[-1]
@@ -103,21 +115,25 @@ if __name__ == "__main__":
             # Get sta1_theta, sta2_theta from STA
             [alpha1, alpha2] = computeAlphaAtSTA(x1, y1, x2, y2,phi,imu_sta1_phi,imu_sta2_phi);
             sta1_txSector = getTxSector(alpha1) # TODO: Change tx sector
-            set_tx_sector(sta1_txSector)
+            #set_tx_sector(sta1_txSector)
+            print('alpha1=', alpha1)
+            print('sta1-txsector=',sta1_txSector)
             sta1_latest_sector = getTxSector(alpha2)
+            print('alpha2=',alpha2)
+            print('sta2-txsector=',sta1_latest_sector)
         
-        elif val ==2:
-            #get tx-sector
-            connection = routeros_api.RouterOsApiPool(ROUTER_IP, username=USERNAME, password=PASSWORD, plaintext_login=True)
-            api = connection.get_api()
-            sector_val = api.get_resource('/interface/w60g').get()[0]['tx-sector']
-            if sta1_txSector != 0 and int(sta1_txSector) == int(sector_val):
+        # elif val ==2:
+        #     #get tx-sector
+        #     connection = routeros_api.RouterOsApiPool(ROUTER_IP, username=USERNAME, password=PASSWORD, plaintext_login=True)
+        #     api = connection.get_api()
+        #     sector_val = api.get_resource('/interface/w60g').get()[0]['tx-sector']
+        #     if sta1_txSector != 0 and int(sta1_txSector) == int(sector_val):
 
-                sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                server_address = ('192.168.250.20', 9999)
-                print(f'Sending sector value = {sta1_latest_sector}')
-                sock.sendto(str(sta1_latest_sector).encode(), server_address)
-                connection.disconnect()
+        #         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        #         server_address = ('192.168.250.20', 9999)
+        #         print(f'Sending sector value = {sta1_latest_sector}')
+        #         sock.sendto(str(sta1_latest_sector).encode(), server_address)
+        #         connection.disconnect()
         
         else:
             continue
